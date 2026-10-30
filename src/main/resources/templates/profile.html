@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile - CSRF Shield</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="navbar">
+    <div class="brand"><span class="shield">🛡️</span> CSRF Shield</div>
+    <nav>
+        <a th:href="@{/dashboard}">Home</a>
+        <a th:href="@{/profile}" class="active">Profile</a>
+        <a th:href="@{/password}">Password</a>
+        <a th:href="@{/transfer}">Transfer</a>
+        <a th:href="@{/security-dashboard}">Security Dashboard</a>
+        <a th:href="@{/attack}">Attack Lab</a>
+        <a th:href="@{/integration}">Integrations</a>
+    </nav>
+</div>
+<div class="container" style="max-width:520px;">
+    <div class="card">
+        <h2>Update Profile</h2>
+        <div class="alert success" th:if="${param.updated != null}">Profile updated successfully. Your CSRF token was rotated.</div>
+
+        <form method="post" th:action="@{/profile/update}">
+            <!-- Hidden CSRF field: synchronizer-token pattern. The filter
+                 rejects this request if this value doesn't match the token
+                 bound to the session, is expired, or the request's Origin
+                 doesn't check out. -->
+            <input type="hidden" name="_csrf" th:value="${csrfToken}">
+
+            <label>Username</label>
+            <input type="text" th:value="${username}" disabled>
+
+            <label>Email</label>
+            <input type="email" name="email" th:value="${email}" required>
+
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

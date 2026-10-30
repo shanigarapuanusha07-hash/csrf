@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - CSRF Shield</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="navbar">
+    <div class="brand"><span class="shield">🛡️</span> CSRF Shield</div>
+    <nav>
+        <a th:href="@{/dashboard}" class="active">Home</a>
+        <a th:href="@{/profile}">Profile</a>
+        <a th:href="@{/password}">Password</a>
+        <a th:href="@{/transfer}">Transfer</a>
+        <a th:href="@{/security-dashboard}">Security Dashboard</a>
+        <a th:href="@{/attack}">Attack Lab</a>
+        <a th:href="@{/integration}">Integrations</a>
+        <span class="mode-pill" th:classappend="${mode}" th:text="${mode}"></span>
+    </nav>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Welcome, <span th:text="${username}"></span> 👋</h2>
+        <p class="muted">You are logged in with a secure, HttpOnly, SameSite=Strict session cookie.</p>
+        <div class="stats-row">
+            <div class="stat"><div class="num" th:text="'$' + ${#numbers.formatDecimal(balance,1,2)}"></div><div class="muted small">Account Balance</div></div>
+            <div class="stat"><div class="num mono" th:text="${#strings.substring(csrfToken,0,16)} + '…'"></div><div class="muted small">Active CSRF Token (truncated)</div></div>
+            <div class="stat"><div class="num" th:text="${mode}" th:classappend="${mode == 'ATTACK'} ? 'red' : 'green'"></div><div class="muted small">Current Simulation Mode</div></div>
+        </div>
+
+        <h3>Try a sensitive operation</h3>
+        <p class="muted small">Each of these is guarded by the CSRF filter: token check, origin/referer check, and (for the AJAX endpoint) a custom-header check.</p>
+        <a class="btn" th:href="@{/profile}">Update Profile</a>
+        <a class="btn" th:href="@{/password}">Change Password</a>
+        <a class="btn" th:href="@{/transfer}">Transfer Money</a>
+    </div>
+
+    <div class="card">
+        <h3>What to try next</h3>
+        <ol class="muted">
+            <li>Open the <a th:href="@{/security-dashboard}">Security Dashboard</a> in another tab to watch requests land live.</li>
+            <li>Go to the <a th:href="@{/attack}">Attack Lab</a>, switch to <b>Attack Mode</b>, and fire the hidden auto-submit form.</li>
+            <li>Switch back to <b>Defense Mode</b> and fire it again — watch it get blocked and logged as suspicious.</li>
+        </ol>
+    </div>
+</div>
+</body>
+</html>

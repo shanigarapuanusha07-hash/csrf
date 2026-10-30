@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - CSRF Shield</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container" style="max-width:420px; margin-top:80px;">
+    <div class="card">
+        <h2>🛡️ CSRF Shield</h2>
+        <p class="muted small">Web Application Security System - sign in to continue</p>
+
+        <div class="alert error" th:if="${error != null}" th:text="${error}"></div>
+
+        <form method="post" th:action="@{/login}">
+            <label>Username</label>
+            <input type="text" name="username" placeholder="alice" required autofocus>
+            <label>Password</label>
+            <input type="password" name="password" placeholder="password123" required>
+            <button type="submit">Log In</button>
+        </form>
+
+        <p class="small muted" style="margin-top:20px;">
+            Demo accounts: <b>alice</b> / password123, <b>bob</b> / password123
+        </p>
+        <p class="small muted">
+            This login sets an <b>HttpOnly + SameSite=Strict</b> session cookie and issues a
+            fresh, session-bound CSRF token.
+        </p>
+    </div>
+</div>
+</body>
+</html>

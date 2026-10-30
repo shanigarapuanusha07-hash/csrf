@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Security Dashboard - CSRF Shield</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="navbar">
+    <div class="brand"><span class="shield">🛡️</span> CSRF Shield</div>
+    <nav>
+        <a th:href="@{/dashboard}">Home</a>
+        <a th:href="@{/profile}">Profile</a>
+        <a th:href="@{/password}">Password</a>
+        <a th:href="@{/transfer}">Transfer</a>
+        <a th:href="@{/security-dashboard}" class="active">Security Dashboard</a>
+        <a th:href="@{/attack}">Attack Lab</a>
+        <a th:href="@{/integration}">Integrations</a>
+        <span class="mode-pill" id="modePill" th:classappend="${mode}" th:text="${mode}"></span>
+    </nav>
+</div>
+
+<div class="container">
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="margin:0;">Security Dashboard</h2>
+            <div>
+                <a class="btn secondary" href="/api/logs/export">⬇ Export CSV</a>
+                <button onclick="refresh()">↻ Refresh</button>
+            </div>
+        </div>
+        <div class="stats-row" style="margin-top:20px;">
+            <div class="stat"><div class="num" id="totalCount">0</div><div class="muted small">Total Requests</div></div>
+            <div class="stat"><div class="num green" id="validCount">0</div><div class="muted small">Valid Requests</div></div>
+            <div class="stat"><div class="num red" id="suspiciousCount">0</div><div class="muted small">Suspicious Activities</div></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Suspicious Activity Trend</h3>
+        <canvas id="trendChart" height="80"></canvas>
+    </div>
+
+    <div class="card">
+        <h3><span class="badge green">Valid</span> Requests Panel</h3>
+        <table>
+            <thead><tr><th>Req ID</th><th>Time</th><th>User</th><th>Action</th><th>Token Status</th><th>IP</th></tr></thead>
+            <tbody id="validTable"></tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3><span class="badge red">Suspicious</span> Activities Panel</h3>
+        <table>
+            <thead><tr><th>Req ID</th><th>Time</th><th>User</th><th>Action</th><th>Token Status</th><th>IP</th><th>Origin</th><th>Reason</th></tr></thead>
+            <tbody id="suspiciousTable"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+let chart;
+
+function fmtTime(iso) {
+    const d = new Date(iso);
+    return d.toLocaleTimeString();
+}
+
+async function refresh() {
+    const res = await fetch('/api/logs');
+    const data = await res.json();
+
+    document.getElementById('totalCount').textContent = data.total;
+    document.getElementById('validCount').textContent = data.valid.length;
+    document.getElementById('suspiciousCount').textContent = data.suspicious.length;
+
+    const modePill = document.getElementById('modePill');
+    modePill.textContent = data.mode;
+    modePill.className = 'mode-pill ' + data.mode;
+
+    const validBody = document.getElementById('validTable');
+    validBody.innerHTML = data.valid.slice(0, 50).map(l => `
+        <tr class="row-valid">
+            <td class="mono">${l.requestId}</td>
+            <td>${fmtTime(l.timestamp)}</td>
+            <td>${l.username}</td>
+            <td>${l.action}</td>
+            <td><span class="badge green">${l.tokenStatus}</span></td>
+            <td class="mono">${l.ip}</td>
+        </tr>`).join('');
+
+    const suspBody = document.getElementById('suspiciousTable');
+    suspBody.innerHTML = data.suspicious.slice(0, 50).map(l => `
+        <tr class="row-suspicious">
+            <td class="mono">${l.requestId}</td>
+            <td>${fmtTime(l.timestamp)}</td>
+            <td>${l.username}</td>
+            <td>${l.action}</td>
+            <td><span class="badge red">${l.tokenStatus}</span></td>
+            <td class="mono">${l.ip}</td>
+            <td class="mono small">${l.origin || '—'}</td>
+            <td class="small">${l.reason}</td>
+        </tr>`).join('');
+
+    const trendLabels = Object.keys(data.trend);
+    const trendValues = Object.values(data.trend);
+    if (!chart) {
+        chart = new Chart(document.getElementById('trendChart'), {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'Suspicious activity per minute',
+                    data: trendValues,
+                    borderColor: '#ff5c5c',
+                    backgroundColor: 'rgba(255,92,92,0.15)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                scales: {
+                    x: { ticks: { color: '#8b97b0' }, grid: { color: '#2a3550' } },
+                    y: { ticks: { color: '#8b97b0' }, grid: { color: '#2a3550' }, beginAtZero: true }
+                },
+                plugins: { legend: { labels: { color: '#e6ebf5' } } }
+            }
+        });
+    } else {
+        chart.data.labels = trendLabels;
+        chart.data.datasets[0].data = trendValues;
+        chart.update();
+    }
+}
+
+refresh();
+setInterval(refresh, 4000);
+</script>
+</body>
+</html>

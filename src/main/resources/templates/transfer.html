@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Transfer - CSRF Shield</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="navbar">
+    <div class="brand"><span class="shield">🛡️</span> CSRF Shield</div>
+    <nav>
+        <a th:href="@{/dashboard}">Home</a>
+        <a th:href="@{/profile}">Profile</a>
+        <a th:href="@{/password}">Password</a>
+        <a th:href="@{/transfer}" class="active">Transfer</a>
+        <a th:href="@{/security-dashboard}">Security Dashboard</a>
+        <a th:href="@{/attack}">Attack Lab</a>
+        <a th:href="@{/integration}">Integrations</a>
+    </nav>
+</div>
+<div class="container" style="max-width:640px;">
+    <div class="card">
+        <h2>Transfer Money</h2>
+        <p class="muted small">Balance: $<span th:text="${#numbers.formatDecimal(balance,1,2)}"></span></p>
+        <div class="alert success" th:if="${param.done != null}">
+            Transferred $<span th:text="${param.amt}"></span> to <span th:text="${param.to}"></span>.
+            CSRF token rotated.
+        </div>
+
+        <h3>Classic form submission (this is the endpoint the Attack Lab targets)</h3>
+        <form method="post" th:action="@{/transfer}">
+            <input type="hidden" name="_csrf" th:value="${csrfToken}">
+            <label>Recipient account</label>
+            <input type="text" name="toAccount" placeholder="bob" required>
+            <label>Amount</label>
+            <input type="number" name="amount" step="0.01" min="0.01" required>
+            <button type="submit">Send</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3>AJAX / JSON API variant</h3>
+        <p class="muted small">
+            Calls <code>/api/transfer</code> with a JSON body, the
+            <code>X-Requested-With: XMLHttpRequest</code> header, and
+            <code>X-CSRF-Token</code> header. A cross-site form cannot set
+            custom headers, so this endpoint is immune to the classic
+            hidden-form CSRF attack even without the Origin check.
+        </p>
+        <label>Recipient account</label>
+        <input type="text" id="apiToAccount" placeholder="bob">
+        <label>Amount</label>
+        <input type="number" id="apiAmount" step="0.01" min="0.01">
+        <button type="button" onclick="sendApiTransfer()">Send via AJAX</button>
+        <p id="apiResult" class="small" style="margin-top:12px;"></p>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    let csrfToken = /*[[${csrfToken}]]*/ '';
+
+    async function sendApiTransfer() {
+        const toAccount = document.getElementById('apiToAccount').value;
+        const amount = parseFloat(document.getElementById('apiAmount').value);
+        const resultEl = document.getElementById('apiResult');
+        try {
+            const res = await fetch('/api/transfer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({ toAccount, amount })
+            });
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+                csrfToken = data.newToken; // rotate client-side copy
+                resultEl.innerHTML = '<span style="color:#2ecc71">Success. New balance: $' + data.newBalance.toFixed(2) + '</span>';
+            } else {
+                resultEl.innerHTML = '<span style="color:#ff5c5c">Failed: ' + (data.error || res.status) + '</span>';
+            }
+        } catch (e) {
+            resultEl.innerHTML = '<span style="color:#ff5c5c">Request error: ' + e + '</span>';
+        }
+    }
+</script>
+</body>
+</html>

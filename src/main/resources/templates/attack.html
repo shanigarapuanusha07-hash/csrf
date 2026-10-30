@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Attack Lab - CSRF Shield</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="navbar">
+    <div class="brand"><span class="shield">🛡️</span> CSRF Shield</div>
+    <nav>
+        <a th:href="@{/dashboard}">Home</a>
+        <a th:href="@{/profile}">Profile</a>
+        <a th:href="@{/password}">Password</a>
+        <a th:href="@{/transfer}">Transfer</a>
+        <a th:href="@{/security-dashboard}">Security Dashboard</a>
+        <a th:href="@{/attack}" class="active">Attack Lab</a>
+        <a th:href="@{/integration}">Integrations</a>
+        <span class="mode-pill" id="modePill" th:classappend="${mode}" th:text="${mode}"></span>
+    </nav>
+</div>
+
+<div class="container">
+    <div class="card" th:if="${!loggedIn}">
+        <p>Please <a th:href="@{/login}">log in</a> first, then come back here to run the attack simulation.</p>
+    </div>
+
+    <div class="card" th:if="${loggedIn}">
+        <h2>⚔️ Attack Lab</h2>
+        <p class="muted">
+            This page hosts a simulated malicious page inside a sandboxed, <code>srcdoc</code>
+            iframe with no <code>allow-same-origin</code> permission. When it submits its hidden
+            form, your browser sends the request with <code>Origin: null</code> — exactly what
+            happens when a real attacker's site (e.g. <code>evil-example.com</code>) tricks your
+            browser into POSTing to this app while you're logged in.
+        </p>
+
+        <div style="margin: 20px 0;">
+            <span>Current mode: </span>
+            <span class="mode-pill" th:classappend="${mode}" th:text="${mode}"></span>
+            <button onclick="toggleMode()" style="margin-left:12px;">Toggle Attack / Defense Mode</button>
+        </div>
+
+        <div class="alert info" th:if="${mode.name() == 'DEFENSE'}">
+            <b>Defense Mode:</b> CSRF token, Origin/Referer, and (for JSON endpoints) custom-header
+            checks are all enforced. The attack below should be <b>blocked</b> and logged as suspicious.
+        </div>
+        <div class="alert error" th:if="${mode.name() == 'ATTACK'}">
+            <b>Attack Mode:</b> server-side CSRF checks are bypassed, and cookies are reissued with
+            <code>SameSite=None</code> to simulate an app that never adopted SameSite cookies. The
+            attack below should <b>succeed</b>.
+        </div>
+
+        <h3>Simulated malicious page</h3>
+        <p class="muted small">
+            Pretend this iframe is <code>http://evil-example.com/free-prize.html</code>. It contains
+            a hidden form auto-targeting this app's <code>/transfer</code> endpoint for $500 to
+            account <code>attacker</code>, with no CSRF token.
+        </p>
+        <iframe id="attackFrame" sandbox="allow-forms allow-scripts" style="width:100%; height:90px; border:1px dashed var(--red); border-radius:8px; background:#1a1010;"></iframe>
+
+        <button class="danger" onclick="fireAttack()">🚀 Load & Fire Malicious Page</button>
+        <p id="attackResult" class="small" style="margin-top:12px;"></p>
+
+        <p class="muted small" style="margin-top: 24px;">
+            Want to see this from a genuinely different origin instead of a sandboxed iframe?
+            A standalone copy of this malicious page ships in this project's
+            <code>malicious-site/index.html</code> — open it via a different port
+            (e.g. <code>python3 -m http.server 9000</code> in that folder) while this app runs on
+            <code>:8080</code>, and it will attempt the exact same attack cross-origin.
+        </p>
+
+        <p><a th:href="@{/security-dashboard}">→ Watch it land on the Security Dashboard</a></p>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    function fireAttack() {
+        const frame = document.getElementById('attackFrame');
+        const maliciousHtml = `
+            <body style="margin:0;font-family:sans-serif;color:#ccc;background:#1a1010;font-size:12px;padding:8px;">
+              You won a prize! Claiming it now...
+              <form id="csrfForm" action="http://localhost:8080/transfer" method="POST">
+                <input type="hidden" name="toAccount" value="attacker">
+                <input type="hidden" name="amount" value="500">
+              </form>
+              <script>document.getElementById('csrfForm').submit();<\/script>
+            </body>`;
+        frame.srcdoc = maliciousHtml;
+        document.getElementById('attackResult').innerHTML =
+            '<span class="muted">Malicious form submitted inside the sandboxed frame. Check the Security Dashboard for the verdict — the response itself isn\'t readable cross-site, which is normal for a real CSRF attack (the attacker doesn\'t need to read the response, only trigger the side effect).</span>';
+    }
+
+    async function toggleMode() {
+        await fetch('/api/mode/toggle', { method: 'POST' });
+        location.reload();
+    }
+</script>
+</body>
+</html>

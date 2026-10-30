@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Integrations - CSRF Shield</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="navbar">
+    <div class="brand"><span class="shield">🛡️</span> CSRF Shield</div>
+    <nav>
+        <a th:href="@{/dashboard}">Home</a>
+        <a th:href="@{/profile}">Profile</a>
+        <a th:href="@{/password}">Password</a>
+        <a th:href="@{/transfer}">Transfer</a>
+        <a th:href="@{/security-dashboard}">Security Dashboard</a>
+        <a th:href="@{/attack}">Attack Lab</a>
+        <a th:href="@{/integration}" class="active">Integrations</a>
+    </nav>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Where CSRF Shield's model applies</h2>
+        <p class="muted">
+            The same three-layer defense demonstrated here — session-bound signed
+            tokens, Origin/Referer checks, and custom-header checks for AJAX — maps
+            directly onto any system where an authenticated user's browser submits
+            state-changing requests.
+        </p>
+    </div>
+
+    <div class="card integration-card">
+        <div class="icon">🏦</div>
+        <div>
+            <h3>Banking</h3>
+            <p class="muted">Fund transfers, beneficiary additions, and standing-instruction
+            changes are exactly the "transfer money" flow modeled in this project — the highest-value
+            target for CSRF, since a single forged request can move funds.</p>
+        </div>
+    </div>
+
+    <div class="card integration-card">
+        <div class="icon">🛒</div>
+        <div>
+            <h3>E-commerce</h3>
+            <p class="muted">Checkout, saved-address edits, and stored-payment-method changes
+            mirror the "profile update" flow — protecting against orders placed or shipping
+            addresses silently changed without the shopper's intent.</p>
+        </div>
+    </div>
+
+    <div class="card integration-card">
+        <div class="icon">🏢</div>
+        <div>
+            <h3>Employee Portals</h3>
+            <p class="muted">Payroll bank-detail updates, leave approvals, and role/permission
+            changes need the same token + Origin validation shown here, since a compromised
+            HR workflow can be as damaging as a compromised bank account.</p>
+        </div>
+    </div>
+
+    <div class="card integration-card">
+        <div class="icon">🎓</div>
+        <div>
+            <h3>Educational Portals</h3>
+            <p class="muted">Grade submissions, enrollment changes, and account-recovery email
+            updates follow the "password change" pattern — sensitive actions that must only
+            ever originate from the portal's own pages.</p>
+        </div>
+    </div>
+
+    <div class="card integration-card">
+        <div class="icon">🏥</div>
+        <div>
+            <h3>Healthcare Systems</h3>
+            <p class="muted">Prescription changes, appointment bookings, and updates to a
+            patient's record are state-changing actions with real-world consequences if
+            forged — the same threat model this project's dashboard is built to surface.</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>How to adapt this project</h3>
+        <ol class="muted">
+            <li>Add each domain's own sensitive endpoints to <code>CsrfFilter.PROTECTED_PATHS</code>.</li>
+            <li>Reuse <code>CsrfTokenManager</code> as-is — it's domain-agnostic.</li>
+            <li>Point the Security Dashboard's log feed at your own audit log store if you
+                already have one, instead of the in-memory <code>LogStore</code> used here.</li>
+        </ol>
+    </div>
+</div>
+</body>
+</html>
